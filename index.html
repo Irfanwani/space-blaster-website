@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space Blaster — Arcade Space Shooter</title>
+  <meta name="description" content="A fast-paced arcade space shooter. Dodge enemies, collect power-ups, and survive increasingly difficult waves of alien fighters.">
+  <meta name="theme-color" content="#0a0a1a">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @font-face {
+      font-family: 'Space';
+      src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+    }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #12122a;
+      --border: #1e1e3a;
+      --cyan: #00e5ff;
+      --cyan-dim: #00e5ff44;
+      --magenta: #ff2d78;
+      --gold: #ffd700;
+      --text: #e0e0f0;
+      --muted: #7a7a9a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Starfield background */
+    #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* Navigation */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: #0a0a1acc;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    nav .brand {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--cyan); }
+
+    section { position: relative; z-index: 1; }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 6rem 2rem 4rem;
+    }
+    .hero-icon {
+      width: 160px; height: 160px; border-radius: 32px;
+      box-shadow: 0 0 60px var(--cyan-dim), 0 0 120px #00e5ff11;
+      margin-bottom: 2rem;
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 6vw, 4.5rem); font-weight: 900;
+      letter-spacing: 3px; margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 30%, var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.2rem; color: var(--muted); max-width: 520px; margin-bottom: 2.5rem;
+    }
+    .cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 0.9rem 2rem; border-radius: 12px; font-size: 1rem; font-weight: 700;
+      text-decoration: none; transition: all 0.25s; border: none; cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), #0090ff);
+      color: #000; box-shadow: 0 4px 24px var(--cyan-dim);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 32px var(--cyan-dim); }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* Sections */
+    .section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-title {
+      font-size: 2rem; font-weight: 800; margin-bottom: 0.6rem;
+      background: linear-gradient(135deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .section-sub { color: var(--muted); font-size: 1.05rem; margin-bottom: 3rem; max-width: 560px; }
+
+    /* Features grid */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 1.6rem;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover { border-color: var(--cyan); transform: translateY(-4px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.92rem; color: var(--muted); }
+
+    /* Enemy types */
+    .enemy-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, fr));
+      gap: 1.2rem;
+    }
+    .enemy-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.6rem; text-align: center;
+      transition: border-color 0.3s;
+    }
+    .enemy-card:hover { border-color: var(--magenta); }
+    .enemy-emoji { font-size: 2.6rem; margin-bottom: 0.6rem; }
+    .enemy-card h4 { font-size: 1rem; font-weight: 700; }
+    .enemy-card p { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
+
+    /* Power-ups */
+    .powerup-list { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .powerup-pill {
+      display: flex; align-items: center; gap: 0.6rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.6rem 1.4rem;
+      font-weight: 600; font-size: 0.95rem;
+      transition: border-color 0.3s;
+    }
+    .powerup-pill:hover { border-color: var(--gold); }
+
+    /* Stats */
+    .stats-row {
+      display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-size: 2.2rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--cyan), var(--magenta));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* CTA banner */
+    .cta-banner {
+      text-align: center; padding: 5rem 2rem;
+      background: linear-gradient(180deg, transparent, #0a0a1a00 30%, #0a0a1a00 70%, transparent);
+    }
+    .cta-banner h2 {
+      font-size: 2.4rem; font-weight: 900; margin-bottom: 1rem;
+    }
+    .cta-banner p { color: var(--muted); margin-bottom: 2rem; font-size: 1.1rem; }
+
+    /* Tech stack */
+    .tech-pills { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; }
+    .tech-pill {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.5rem 1.2rem; font-size: 0.88rem;
+      font-weight: 600; color: var(--muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center; padding: 3rem 2rem;
+      border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--cyan); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      nav .nav-links { display: none; }
+      .hero h1 { font-size: 2.2rem; }
+      .section { padding: 3rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="stars"></canvas>
+
+  <nav>
+    <div class="brand">SPACE BLASTER</div>
+    <div class="nav-links" style="display:flex;gap:1.6rem;">
+      <a href="#features">Features</a>
+      <a href="#enemies">Enemies</a>
+      <a href="#powerups">Power-Ups</a>
+      <a href="#tech">Tech</a>
+      <a href="https://play.google.com/store/apps/details?id=com.appshop.spaceblaster" target="_blank" rel="noopener" style="color:var(--cyan);font-weight:600;">Play Now</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <img class="hero-icon" src="./icon.png" alt="Space Blaster icon"
+         onerror="this.style.background='linear-gradient(135deg,var(--cyan),var(--magenta))';this.style.display='block';">
+    <h1>SPACE BLASTER</h1>
+    <p>Dodge enemies, collect power-ups, and survive increasingly difficult waves of alien fighters in this fast-paced arcade space shooter.</p>
+    <div class="cta-group">
+      <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.appshop.spaceblaster" target="_blank" rel="noopener">
+        <svg width="20" height="22" viewBox="0 0 20 22" fill="none"><path d="M1 1.5L11 11 1 20.5V1.5Z" fill="#000"/><path d="M14.5 8L11 11l3.5 3 4-2.2c.7-.4.7-1.2 0-1.6l-4-2.2Z" fill="#000"/></svg>
+        Get it on Google Play
+      </a>
+      <a class="btn btn-secondary" href="#features">Learn More</a>
+    </div>
+    <div class="stats-row" style="margin-top:3rem;">
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Enemy Types</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Power-Ups</div></div>
+      <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Waves</div></div>
+      <div class="stat"><div class="stat-num">1</div><div class="stat-label">Survivor</div></div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-title">Game Features</div>
+    <p class="section-sub">Built for pure arcade thrills — easy to pick up, impossible to master.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">👆</div>
+        <h3>Intuitive Touch Controls</h3>
+        <p>Drag anywhere on the screen to pilot your ship. No on-screen buttons — the entire screen is your joystick.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔫</div>
+        <h3>Auto-Fire Plasma</h3>
+        <p>Your ship fires a constant stream of cyan plasma bolts — focus on dodging, we handle the shooting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💥</div>
+        <h3>Combo System</h3>
+        <p>Chain kills together for escalating score multipliers. The longer your streak, the higher you climb on the leaderboard.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌟</div>
+        <h3>Particle Effects</h3>
+        <p>Explosions, thruster trails, hit sparks, and screen shake bring every battle to life.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌌</div>
+        <h3>Parallax Star Field</h3>
+        <p>Deep space backgrounds with layered parallax scrolling create a stunning sense of speed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Progressive Difficulty</h3>
+        <p>Enemies scale with each wave — how far can you go before the galaxy fights back?</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>Continue System</h3>
+        <p>Died? Watch a quick ad to resume from where you left off. No progress lost.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <h3>Score Challenge</h3>
+        <p>Beat your high score, compete with friends, and prove you're the ultimate space ace.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENEMIES -->
+  <section class="section" id="enemies">
+    <div class="section-title">Enemy Types</div>
+    <p class="section-sub">Four distinct threats — each with unique behaviors and attack patterns.</p>
+    <div class="enemy-grid">
+      <div class="enemy-card">
+        <div class="enemy-emoji">🚀</div>
+        <h4>Scout</h4>
+        <p>Fast and fragile — zigzags through the battlefield to catch you off guard.</p>
+      </div>
+      <div class="enemy-card">
+        <div class="enemy-emoji">🛸</div>
+        <h4>Fighter</h4>
+        <p>The backbone of the alien fleet — reliable, aggressive, and always in packs.</p>
+      </div>
+      <div class="enemy-card">
+        <div class="enemy-emoji">💣</div>
+        <h4>Bomber</h4>
+        <p>Slow but devastating — swoops in and drops area-of-effect blasts.</p>
+      </div>
+      <div class="enemy-card">
+        <div class="enemy-emoji">👾</div>
+        <h4>Boss</h4>
+        <p>Appears every 5th wave. Massive, armored, and relentless. Only the best survive.</p>
+      </div>
+    </div>
+    <div class="stats-row" style="margin-top:2.5rem;">
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Movement Patterns</div></div>
+      <div class="stat"><div class="stat-num">15%</div><div class="stat-label">Power-Up Drop Rate</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Boss Wave Interval</div></div>
+    </div>
+  </section>
+
+  <!-- POWER-UPS -->
+  <section class="section" id="powerups">
+    <div class="section-title">Power-Ups</div>
+    <p class="section-sub">Five power-ups drop from defeated enemies — collect them to turn the tide.</p>
+    <div class="powerup-list">
+      <div class="powerup-pill">🛡️ Shield</div>
+      <div class="powerup-pill">🔥 Rapid Fire</div>
+      <div class="powerup-pill">✨ Multi-Shot</div>
+      <div class="powerup-pill">❤️ Health</div>
+      <div class="powerup-pill">⭐ Score Bonus</div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="section" id="tech">
+    <div class="section-title">Built With</div>
+    <p class="section-sub">Modern, cross-platform technology powering smooth 60fps gameplay.</p>
+    <div class="tech-pills">
+      <div class="tech-pill">React Native</div>
+      <div class="tech-pill">Expo SDK 57</div>
+      <div class="tech-pill">TypeScript</div>
+      <div class="tech-pill">ECS Architecture</div>
+      <div class="tech-pill">Google AdMob</div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-banner">
+    <h2>Ready to Blast Off?</h2>
+    <p>Download Space Blaster free on Google Play and start your mission.</p>
+    <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.appshop.spaceblaster" target="_blank" rel="noopener">
+      <svg width="20" height="22" viewBox="0 0 20 22" fill="none"><path d="M1 1.5L11 11 1 20.5V1.5Z" fill="#000"/><path d="M14.5 8L11 11l3.5 3 4-2.2c.7-.4.7-1.2 0-1.6l-4-2.2Z" fill="#000"/></svg>
+      Get it on Google Play
+    </a>
+  </section>
+
+  <footer>
+    <p>&copy; 2026 Space Blaster. All rights reserved. | <a href="../space-blaster/PRIVACY_POLICY.md">Privacy Policy</a></p>
+  </footer>
+
+  <script>
+    // Parallax starfield
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    const STAR_COUNT = 200;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function initStars() {
+      stars = [];
+      for (let i = 0; i < STAR_COUNT; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.8 + 0.2,
+          speed: Math.random() * 0.6 + 0.1,
+          opacity: Math.random() * 0.8 + 0.2,
+        });
+      }
+    }
+    initStars();
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,220,255,${s.opacity})`;
+        ctx.fill();
+        s.y += s.speed;
+        if (s.y > canvas.height + 5) {
+          s.y = -5;
+          s.x = Math.random() * canvas.width;
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
